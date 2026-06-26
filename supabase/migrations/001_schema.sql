@@ -32,6 +32,13 @@ create table if not exists site_settings (
   unique(section, key)
 );
 
+-- Auto-update updated_at on site_settings
+create or replace function update_updated_at()
+returns trigger as $$ begin new.updated_at = now(); return new; end; $$ language plpgsql;
+
+create trigger trg_site_settings_updated_at
+  before update on site_settings for each row execute function update_updated_at();
+
 -- RLS: Enable row-level security
 alter table services enable row level security;
 alter table gallery enable row level security;
