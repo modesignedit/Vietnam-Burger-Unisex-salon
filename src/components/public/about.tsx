@@ -1,19 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb } from '@/lib/firebase/admin'
 import type { AboutContent } from '@/lib/types'
 
 export default async function About() {
-  const supabase = await createClient()
-
-  const { data: settings } = await supabase
-    .from('site_settings')
-    .select('key, value')
-    .eq('section', 'about')
-
-  const get = (key: string) => settings?.find((s) => s.key === key)?.value ?? ''
+  const doc = await adminDb.collection('site_settings').doc('about').get()
+  const data = doc.data()
   const about = {
-    headline: get('headline'),
-    body: get('body'),
-    features: get('features'),
+    headline: data?.headline ?? '',
+    body: data?.body ?? '',
+    features: data?.features ?? [],
   } as AboutContent
 
   const features = Array.isArray(about.features) ? about.features : []

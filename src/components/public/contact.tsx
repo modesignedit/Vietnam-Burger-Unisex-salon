@@ -1,22 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb } from '@/lib/firebase/admin'
 import { MapPin, Clock, Phone } from 'lucide-react'
 import type { ContactContent } from '@/lib/types'
 
 export default async function Contact() {
-  const supabase = await createClient()
-
-  const { data: settings } = await supabase
-    .from('site_settings')
-    .select('key, value')
-    .eq('section', 'contact')
-
-  const get = (key: string) => settings?.find((s) => s.key === key)?.value ?? ''
+  const doc = await adminDb.collection('site_settings').doc('contact').get()
+  const data = doc.data()
   const contact = {
-    address: get('address'),
-    phone: get('phone'),
-    hours: get('hours'),
-    cta_title: get('cta_title'),
-    cta_text: get('cta_text'),
+    address: data?.address ?? '',
+    phone: data?.phone ?? '',
+    hours: data?.hours ?? '',
+    cta_title: data?.cta_title ?? '',
+    cta_text: data?.cta_text ?? '',
   } as ContactContent
 
   return (

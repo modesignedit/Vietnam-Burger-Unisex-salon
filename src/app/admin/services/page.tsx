@@ -1,30 +1,22 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
+import { db } from '@/lib/firebase/client'
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
 import type { Service } from '@/lib/types'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<{ open: boolean; edit?: Service }>({ open: false })
-  const supabaseRef = useRef<SupabaseClient | null>(null)
-
-  function getSupabase() {
-    if (!supabaseRef.current) supabaseRef.current = createClient()
-    return supabaseRef.current
-  }
 
   async function loadServices() {
-    const { data } = await getSupabase()
-      .from('services')
-      .select('*')
-      .order('sort_order', { ascending: true })
-    if (data) setServices(data)
+    const snapshot = await getDocs(query(collection(db, 'services'), orderBy('sort_order', 'asc')))
+    const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Service))
+    setServices(data)
     setLoading(false)
   }
 
@@ -32,16 +24,16 @@ export default function ServicesPage() {
 
   async function handleSave(form: Partial<Service>) {
     if (modal.edit) {
-      await getSupabase().from('services').update(form).eq('id', modal.edit.id)
+      await updateDoc(doc(db, 'services', modal.edit.id), form)
     } else {
-      await getSupabase().from('services').insert(form)
+      await addDoc(collection(db, 'services'), form)
     }
     setModal({ open: false })
     loadServices()
   }
 
   async function handleDelete(id: string) {
-    await getSupabase().from('services').delete().eq('id', id)
+    await deleteDoc(doc(db, 'services', id))
     loadServices()
   }
 
@@ -53,8 +45,8 @@ export default function ServicesPage() {
 
     const current = services[idx]
     const target = services[swap]
-    await getSupabase().from('services').update({ sort_order: target.sort_order }).eq('id', current.id)
-    await getSupabase().from('services').update({ sort_order: current.sort_order }).eq('id', target.id)
+    await updateDoc(doc(db, 'services', current.id), { sort_order: target.sort_order })
+    await updateDoc(doc(db, 'services', target.id), { sort_order: current.sort_order })
     loadServices()
   }
 

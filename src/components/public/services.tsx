@@ -1,15 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb } from '@/lib/firebase/admin'
 import type { Service } from '@/lib/types'
 
 export default async function Services() {
-  const supabase = await createClient()
+  const snapshot = await adminDb.collection('services').orderBy('sort_order', 'asc').get()
+  const services = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Service))
 
-  const { data: services } = await supabase
-    .from('services')
-    .select('*')
-    .order('sort_order', { ascending: true })
-
-  if (!services?.length) return null
+  if (!services.length) return null
 
   return (
     <section id="services" className="py-24 px-6">
@@ -17,7 +13,7 @@ export default async function Services() {
         <h2 className="section-title">Our Services</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service: Service) => (
+          {services.map((service) => (
             <div
               key={service.id}
               className="group border border-gold/10 hover:border-gold transition-colors p-8 space-y-4"

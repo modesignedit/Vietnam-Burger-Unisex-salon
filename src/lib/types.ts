@@ -17,14 +17,6 @@ export interface GalleryItem {
   created_at: string
 }
 
-export interface SiteSetting {
-  id: string
-  section: string
-  key: string
-  value: any
-  updated_at: string
-}
-
 export interface HeroContent {
   badge: string
   headline: string

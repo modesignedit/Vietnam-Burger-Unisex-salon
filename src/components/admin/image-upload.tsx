@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/lib/firebase/client'
 import { Upload, X } from 'lucide-react'
 
 export default function ImageUpload({
@@ -12,7 +13,6 @@ export default function ImageUpload({
   onChange: (url: string) => void
 }) {
   const [uploading, setUploading] = useState(false)
-  const supabase = createClient()
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -21,16 +21,15 @@ export default function ImageUpload({
     setUploading(true)
     const ext = file.name.split('.').pop()
     const path = `gallery/${Date.now()}.${ext}`
+    const storageRef = ref(storage, path)
 
-    const { error } = await supabase.storage.from('images').upload(path, file)
-    if (error) {
-      console.error('Upload failed:', error)
-      setUploading(false)
-      return
+    try {
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      onChange(url)
+    } catch (err) {
+      console.error('Upload failed:', err)
     }
-
-    const { data: urlData } = supabase.storage.from('images').getPublicUrl(path)
-    onChange(urlData.publicUrl)
     setUploading(false)
   }
 

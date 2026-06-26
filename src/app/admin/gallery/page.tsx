@@ -1,31 +1,24 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
+import { collection, getDocs, query, orderBy, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
+import { ref, deleteObject } from 'firebase/storage'
+import { db, storage } from '@/lib/firebase/client'
 import { Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
 import type { GalleryItem } from '@/lib/types'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [newAlt, setNewAlt] = useState('')
-  const supabase = useRef<SupabaseClient | null>(null)
-
-  function getSupabase() {
-    if (!supabase.current) supabase.current = createClient()
-    return supabase.current
-  }
 
   async function loadGallery() {
-    const { data } = await getSupabase()
-      .from('gallery')
-      .select('*')
-      .order('sort_order', { ascending: true })
-    if (data) setItems(data)
+    const snapshot = await getDocs(query(collection(db, 'gallery'), orderBy('sort_order', 'asc')))
+    const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as GalleryItem))
+    setItems(data)
     setLoading(false)
   }
 
@@ -33,10 +26,11 @@ export default function GalleryPage() {
 
   async function handleAdd(url: string) {
     if (!url) return
-    await getSupabase().from('gallery').insert({
+    await addDoc(collection(db, 'gallery'), {
       image_url: url,
       alt_text: newAlt,
       sort_order: Date.now(),
+      created_at: '',
     })
     setAdding(false)
     setNewAlt('')
@@ -47,9 +41,12 @@ export default function GalleryPage() {
     const item = items.find((i) => i.id === id)
     if (item?.image_url) {
       const path = item.image_url.split('/').pop()
-      if (path) await getSupabase().storage.from('images').remove([`gallery/${path}`])
+      if (path) {
+        const storageRef = ref(storage, `gallery/${path}`)
+        try { await deleteObject(storageRef) } catch { /* ignore if file missing */ }
+      }
     }
-    await getSupabase().from('gallery').delete().eq('id', id)
+    await deleteDoc(doc(db, 'gallery', id))
     loadGallery()
   }
 
@@ -61,8 +58,8 @@ export default function GalleryPage() {
 
     const current = items[idx]
     const target = items[swap]
-    await getSupabase().from('gallery').update({ sort_order: target.sort_order }).eq('id', current.id)
-    await getSupabase().from('gallery').update({ sort_order: current.sort_order }).eq('id', target.id)
+    await updateDoc(doc(db, 'gallery', current.id), { sort_order: target.sort_order })
+    await updateDoc(doc(db, 'gallery', target.id), { sort_order: current.sort_order })
     loadGallery()
   }
 

@@ -3,7 +3,8 @@
 import { LayoutDashboard, Scissors, Image, Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'firebase/auth'
+import { auth } from '@/lib/firebase/client'
 
 const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -17,8 +18,8 @@ export default function Sidebar() {
   const router = useRouter()
 
   async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await signOut(auth)
+    await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/admin')
     router.refresh()
   }

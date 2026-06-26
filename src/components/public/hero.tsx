@@ -1,16 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb } from '@/lib/firebase/admin'
 import type { HeroContent } from '@/lib/types'
 
 export default async function Hero() {
-  const supabase = await createClient()
-
-  const { data: settings } = await supabase
-    .from('site_settings')
-    .select('key, value')
-    .eq('section', 'hero')
-
-  const get = (key: string) => settings?.find((s) => s.key === key)?.value ?? ''
-  const hero = { badge: get('badge'), headline: get('headline'), subheadline: get('subheadline') } as HeroContent
+  const doc = await adminDb.collection('site_settings').doc('hero').get()
+  const hero = (doc.data() ?? { badge: '', headline: '', subheadline: '' }) as HeroContent
 
   const bgUrl = 'https://picsum.photos/seed/salon-hero/1920/1080?blur=2'
 

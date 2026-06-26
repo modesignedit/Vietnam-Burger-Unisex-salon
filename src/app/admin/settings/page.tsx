@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase/client'
 import AdminLayout from '@/components/admin/admin-layout'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 interface SettingField {
   section: string
@@ -31,42 +31,49 @@ const FIELDS: SettingField[] = [
   { section: 'social', key: 'facebook', label: 'Facebook URL', type: 'text' },
 ]
 
+const SECTION_DOCS: Record<string, string> = {
+  hero: 'hero',
+  about: 'about',
+  contact: 'contact',
+  footer: 'footer',
+  social: 'social',
+}
+
 export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const supabase = useRef<SupabaseClient | null>(null)
-
-  function getSupabase() {
-    if (!supabase.current) supabase.current = createClient()
-    return supabase.current
-  }
 
   useEffect(() => {
     async function load() {
-      const { data } = await getSupabase().from('site_settings').select('*')
-      if (data) {
-        const map: Record<string, string> = {}
-        data.forEach((s) => {
-          const val = s.value
-          map[`${s.section}.${s.key}`] = typeof val === 'string' ? val : JSON.stringify(val)
-        })
-        setValues(map)
+      const sections = [...new Set(FIELDS.map((f) => f.section))]
+      const map: Record<string, string> = {}
+      for (const section of sections) {
+        const snap = await getDoc(doc(db, 'site_settings', SECTION_DOCS[section]))
+        const data = snap.data()
+        if (data) {
+          for (const field of FIELDS.filter((f) => f.section === section)) {
+            const val = data[field.key]
+            map[`${section}.${field.key}`] = val !== undefined ? (typeof val === 'string' ? val : JSON.stringify(val)) : ''
+          }
+        }
       }
+      setValues(map)
     }
     load()
   }, [])
 
   async function handleSave() {
     setSaving(true)
-    for (const field of FIELDS) {
-      const key = `${field.section}.${field.key}`
-      const raw = values[key] ?? ''
-      const value = field.type === 'json' ? JSON.parse(raw || '[]') : raw
-      await getSupabase().from('site_settings').upsert(
-        { section: field.section, key: field.key, value },
-        { onConflict: 'section, key' }
-      )
+    const sections = [...new Set(FIELDS.map((f) => f.section))]
+    for (const section of sections) {
+      const data: Record<string, unknown> = {}
+      for (const field of FIELDS.filter((f) => f.section === section)) {
+        const key = `${section}.${field.key}`
+        const raw = values[key] ?? ''
+        data[field.key] = field.type === 'json' ? JSON.parse(raw || '[]') : raw
+      }
+      await setDoc(doc(db, 'site_settings', SECTION_DOCS[section]), data, { merge: true })
     }
     setSaving(false)
     setSaved(true)

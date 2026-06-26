@@ -1,15 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb } from '@/lib/firebase/admin'
 import type { GalleryItem } from '@/lib/types'
 
 export default async function Gallery() {
-  const supabase = await createClient()
+  const snapshot = await adminDb.collection('gallery').orderBy('sort_order', 'asc').get()
+  const images = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as GalleryItem))
 
-  const { data: images } = await supabase
-    .from('gallery')
-    .select('*')
-    .order('sort_order', { ascending: true })
-
-  const displayImages = images?.length
+  const displayImages = images.length
     ? images
     : [
         { id: '1', image_url: 'https://picsum.photos/seed/v-fade/800/1000', alt_text: 'Signature V-Burger Fade', sort_order: 1, created_at: '' },

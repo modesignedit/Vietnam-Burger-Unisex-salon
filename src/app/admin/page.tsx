@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase/client'
 import { useRouter } from 'next/navigation'
 
 export default function AdminLogin() {
@@ -16,20 +17,22 @@ export default function AdminLogin() {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { user } = await signInWithEmailAndPassword(auth, email, password)
+      const idToken = await user.getIdToken()
 
-    if (authError) {
-      setError(authError.message)
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      })
+
+      router.push('/admin/dashboard')
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message ?? 'Login failed')
       setLoading(false)
-      return
     }
-
-    router.push('/admin/dashboard')
-    router.refresh()
   }
 
   return (
