@@ -1,21 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Scissors, Image, Settings } from 'lucide-react'
 import Link from 'next/link'
 import AdminLayout from '@/components/admin/admin-layout'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({ services: 0, gallery: 0 })
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useRef<SupabaseClient | null>(null)
+
+  function getSupabase() {
+    if (!supabase.current) supabase.current = createClient()
+    return supabase.current
+  }
 
   useEffect(() => {
     async function loadStats() {
       const [svc, gal] = await Promise.all([
-        supabase.from('services').select('*', { count: 'exact', head: true }),
-        supabase.from('gallery').select('*', { count: 'exact', head: true }),
+        getSupabase().from('services').select('*', { count: 'exact', head: true }),
+        getSupabase().from('gallery').select('*', { count: 'exact', head: true }),
       ])
       setStats({
         services: svc.count ?? 0,

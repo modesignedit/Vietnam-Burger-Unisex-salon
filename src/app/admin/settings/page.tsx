@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import AdminLayout from '@/components/admin/admin-layout'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 interface SettingField {
   section: string
@@ -34,11 +35,16 @@ export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const supabase = createClient()
+  const supabase = useRef<SupabaseClient | null>(null)
+
+  function getSupabase() {
+    if (!supabase.current) supabase.current = createClient()
+    return supabase.current
+  }
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('site_settings').select('*')
+      const { data } = await getSupabase().from('site_settings').select('*')
       if (data) {
         const map: Record<string, string> = {}
         data.forEach((s) => {
@@ -57,7 +63,7 @@ export default function SettingsPage() {
       const key = `${field.section}.${field.key}`
       const raw = values[key] ?? ''
       const value = field.type === 'json' ? JSON.parse(raw || '[]') : raw
-      await supabase.from('site_settings').upsert(
+      await getSupabase().from('site_settings').upsert(
         { section: field.section, key: field.key, value },
         { onConflict: 'section, key' }
       )
