@@ -1,20 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
 import type { Service } from '@/lib/types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<{ open: boolean; edit?: Service }>({ open: false })
-  const supabase = createClient()
+  const supabaseRef = useRef<SupabaseClient | null>(null)
+
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }
 
   async function loadServices() {
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('services')
       .select('*')
       .order('sort_order', { ascending: true })
@@ -26,16 +32,16 @@ export default function ServicesPage() {
 
   async function handleSave(form: Partial<Service>) {
     if (modal.edit) {
-      await supabase.from('services').update(form).eq('id', modal.edit.id)
+      await getSupabase().from('services').update(form).eq('id', modal.edit.id)
     } else {
-      await supabase.from('services').insert(form)
+      await getSupabase().from('services').insert(form)
     }
     setModal({ open: false })
     loadServices()
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('services').delete().eq('id', id)
+    await getSupabase().from('services').delete().eq('id', id)
     loadServices()
   }
 
@@ -47,8 +53,8 @@ export default function ServicesPage() {
 
     const current = services[idx]
     const target = services[swap]
-    await supabase.from('services').update({ sort_order: target.sort_order }).eq('id', current.id)
-    await supabase.from('services').update({ sort_order: current.sort_order }).eq('id', target.id)
+    await getSupabase().from('services').update({ sort_order: target.sort_order }).eq('id', current.id)
+    await getSupabase().from('services').update({ sort_order: current.sort_order }).eq('id', target.id)
     loadServices()
   }
 
