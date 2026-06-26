@@ -1,26 +1,36 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-gold: #d4af37;
+  --color-gold-light: #f9e2af;
+  --color-gold-dark: #996515;
+  --color-luxury-black: #0a0a0a;
+  --color-luxury-paper: #f5f2ed;
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    background-color: var(--color-luxury-black);
+    font-family: var(--font-sans);
+    color: var(--color-luxury-paper);
+    -webkit-font-smoothing: antialiased;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .btn-gold {
+    @apply bg-gold text-luxury-black font-semibold tracking-widest uppercase px-8 py-3 transition-all duration-300;
+  }
+  .btn-gold:hover {
+    @apply bg-gold-light scale-105;
+  }
+  .section-title {
+    @apply text-4xl md:text-6xl text-gold text-center mb-8;
+  }
 }
