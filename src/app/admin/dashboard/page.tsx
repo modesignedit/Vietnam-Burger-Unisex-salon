@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, orderBy } from 'firebase/firestore'
-import { db } from '@/lib/firebase/client'
+import { getDb } from '@/lib/firebase/client'
 import { Scissors, Image, Settings } from 'lucide-react'
 import Link from 'next/link'
 import AdminLayout from '@/components/admin/admin-layout'
@@ -13,6 +13,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadStats() {
+      const db = getDb()
       const [svcSnap, galSnap] = await Promise.all([
         getDocs(query(collection(db, 'services'), orderBy('sort_order'))),
         getDocs(query(collection(db, 'gallery'), orderBy('sort_order'))),

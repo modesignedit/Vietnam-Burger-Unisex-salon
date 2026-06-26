@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, orderBy, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 import { ref, deleteObject } from 'firebase/storage'
-import { db, storage } from '@/lib/firebase/client'
+import { getDb, getStorageInstance } from '@/lib/firebase/client'
 import { Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
@@ -16,6 +16,7 @@ export default function GalleryPage() {
   const [newAlt, setNewAlt] = useState('')
 
   async function loadGallery() {
+    const db = getDb()
     const snapshot = await getDocs(query(collection(db, 'gallery'), orderBy('sort_order', 'asc')))
     const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as GalleryItem))
     setItems(data)
@@ -26,6 +27,7 @@ export default function GalleryPage() {
 
   async function handleAdd(url: string) {
     if (!url) return
+    const db = getDb()
     await addDoc(collection(db, 'gallery'), {
       image_url: url,
       alt_text: newAlt,
@@ -42,11 +44,11 @@ export default function GalleryPage() {
     if (item?.image_url) {
       const path = item.image_url.split('/').pop()
       if (path) {
-        const storageRef = ref(storage, `gallery/${path}`)
+        const storageRef = ref(getStorageInstance(), `gallery/${path}`)
         try { await deleteObject(storageRef) } catch { /* ignore if file missing */ }
       }
     }
-    await deleteDoc(doc(db, 'gallery', id))
+    await deleteDoc(doc(getDb(), 'gallery', id))
     loadGallery()
   }
 
@@ -58,6 +60,7 @@ export default function GalleryPage() {
 
     const current = items[idx]
     const target = items[swap]
+    const db = getDb()
     await updateDoc(doc(db, 'gallery', current.id), { sort_order: target.sort_order })
     await updateDoc(doc(db, 'gallery', target.id), { sort_order: current.sort_order })
     loadGallery()

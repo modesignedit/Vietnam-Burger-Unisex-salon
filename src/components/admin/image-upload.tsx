@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/lib/firebase/client'
+import { getStorageInstance } from '@/lib/firebase/client'
 import { Upload, X } from 'lucide-react'
 
 export default function ImageUpload({
@@ -21,7 +21,7 @@ export default function ImageUpload({
     setUploading(true)
     const ext = file.name.split('.').pop()
     const path = `gallery/${Date.now()}.${ext}`
-    const storageRef = ref(storage, path)
+    const storageRef = ref(getStorageInstance(), path)
 
     try {
       await uploadBytes(storageRef, file)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
-import { db } from '@/lib/firebase/client'
+import { getDb } from '@/lib/firebase/client'
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
@@ -14,6 +14,7 @@ export default function ServicesPage() {
   const [modal, setModal] = useState<{ open: boolean; edit?: Service }>({ open: false })
 
   async function loadServices() {
+    const db = getDb()
     const snapshot = await getDocs(query(collection(db, 'services'), orderBy('sort_order', 'asc')))
     const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Service))
     setServices(data)
@@ -23,6 +24,7 @@ export default function ServicesPage() {
   useEffect(() => { loadServices() }, [])
 
   async function handleSave(form: Partial<Service>) {
+    const db = getDb()
     if (modal.edit) {
       await updateDoc(doc(db, 'services', modal.edit.id), form)
     } else {
@@ -33,7 +35,7 @@ export default function ServicesPage() {
   }
 
   async function handleDelete(id: string) {
-    await deleteDoc(doc(db, 'services', id))
+    await deleteDoc(doc(getDb(), 'services', id))
     loadServices()
   }
 
@@ -45,6 +47,7 @@ export default function ServicesPage() {
 
     const current = services[idx]
     const target = services[swap]
+    const db = getDb()
     await updateDoc(doc(db, 'services', current.id), { sort_order: target.sort_order })
     await updateDoc(doc(db, 'services', target.id), { sort_order: current.sort_order })
     loadServices()

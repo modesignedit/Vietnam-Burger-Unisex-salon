@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase/client'
+import { getDb } from '@/lib/firebase/client'
 import AdminLayout from '@/components/admin/admin-layout'
 
 interface SettingField {
@@ -46,6 +46,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function load() {
+      const db = getDb()
       const sections = [...new Set(FIELDS.map((f) => f.section))]
       const map: Record<string, string> = {}
       for (const section of sections) {
@@ -65,6 +66,7 @@ export default function SettingsPage() {
 
   async function handleSave() {
     setSaving(true)
+    const db = getDb()
     const sections = [...new Set(FIELDS.map((f) => f.section))]
     for (const section of sections) {
       const data: Record<string, unknown> = {}
