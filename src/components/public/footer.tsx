@@ -1,13 +1,13 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { redis } from '@/lib/redis'
 
 export default async function Footer() {
-  const [footerSnap, socialSnap] = await Promise.all([
-    adminDb.ref('settings/footer').get(),
-    adminDb.ref('settings/social').get(),
+  const [footerRaw, socialRaw] = await Promise.all([
+    redis.get('settings_footer'),
+    redis.get('settings_social'),
   ])
 
-  const footer = footerSnap.val() ?? {}
-  const social = socialSnap.val() ?? {}
+  const footer = (footerRaw ? JSON.parse(footerRaw as string) : {}) as { brand?: string; copyright?: string }
+  const social = (socialRaw ? JSON.parse(socialRaw as string) : {}) as { tiktok?: string; instagram?: string; facebook?: string }
 
   return (
     <footer className="border-t border-gold/20 py-12 px-6">

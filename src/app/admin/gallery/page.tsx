@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ref, get, push, update, remove } from 'firebase/database'
-import { getClientDb, getClientStorage } from '@/lib/firebase/client'
 import { ref as storageRef, deleteObject } from 'firebase/storage'
+import { getClientStorage } from '@/lib/firebase/client'
 import { Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
@@ -16,28 +15,31 @@ export default function GalleryPage() {
   const [newAlt, setNewAlt] = useState('')
 
   async function loadGallery() {
-    const snap = await get(ref(getClientDb(), 'gallery'))
-    const raw = snap.val() ?? {}
-    const list = Object.entries(raw)
-      .map(([id, data]) => ({ id, ...data as any } as GalleryItem))
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    const res = await fetch('/api/data?collection=gallery')
+    const data = await res.json()
+    const list = (data ?? []).sort((a: GalleryItem, b: GalleryItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     setItems(list)
     setLoading(false)
   }
 
   useEffect(() => { loadGallery() }, [])
 
+  async function persist(list: GalleryItem[]) {
+    await fetch('/api/data?collection=gallery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(list),
+    })
+  }
+
   async function handleAdd(url: string) {
     if (!url) return
-    await push(ref(getClientDb(), 'gallery'), {
-      image_url: url,
-      alt_text: newAlt,
-      sort_order: Date.now(),
-      created_at: new Date().toISOString(),
-    })
+    const item = { id: crypto.randomUUID(), image_url: url, alt_text: newAlt, sort_order: Date.now(), created_at: new Date().toISOString() } as GalleryItem
+    const list = [...items, item]
+    setItems(list)
+    await persist(list)
     setAdding(false)
     setNewAlt('')
-    loadGallery()
   }
 
   async function handleDelete(id: string) {
@@ -48,8 +50,9 @@ export default function GalleryPage() {
         if (storagePath) await deleteObject(storageRef(getClientStorage(), decodeURIComponent(storagePath)))
       } catch {}
     }
-    await remove(ref(getClientDb(), `gallery/${id}`))
-    loadGallery()
+    const list = items.filter((i) => i.id !== id)
+    setItems(list)
+    await persist(list)
   }
 
   async function handleReorder(id: string, dir: 'up' | 'down') {
@@ -57,11 +60,12 @@ export default function GalleryPage() {
     if (idx === -1) return
     const swap = dir === 'up' ? idx - 1 : idx + 1
     if (swap < 0 || swap >= items.length) return
-    const current = items[idx]
-    const target = items[swap]
-    await update(ref(getClientDb(), `gallery/${current.id}`), { sort_order: target.sort_order })
-    await update(ref(getClientDb(), `gallery/${target.id}`), { sort_order: current.sort_order })
-    loadGallery()
+    const list = [...items]
+    const temp = list[idx].sort_order
+    list[idx] = { ...list[idx], sort_order: list[swap].sort_order }
+    list[swap] = { ...list[swap], sort_order: temp }
+    setItems(list)
+    await persist(list)
   }
 
   if (loading) return <AdminLayout><p className="text-luxury-paper/50">Loading...</p></AdminLayout>

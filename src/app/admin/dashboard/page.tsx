@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ref, get } from 'firebase/database'
-import { getClientDb } from '@/lib/firebase/client'
 import { Scissors, Image, Settings } from 'lucide-react'
 import Link from 'next/link'
 import AdminLayout from '@/components/admin/admin-layout'
@@ -13,13 +11,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadStats() {
-      const [svcSnap, galSnap] = await Promise.all([
-        get(ref(getClientDb(), 'services')),
-        get(ref(getClientDb(), 'gallery')),
+      const [svcRes, galRes] = await Promise.all([
+        fetch('/api/data?collection=services'),
+        fetch('/api/data?collection=gallery'),
       ])
+      const services = await svcRes.json()
+      const gallery = await galRes.json()
       setStats({
-        services: svcSnap.val() ? Object.keys(svcSnap.val()).length : 0,
-        gallery: galSnap.val() ? Object.keys(galSnap.val()).length : 0,
+        services: Array.isArray(services) ? services.length : 0,
+        gallery: Array.isArray(gallery) ? gallery.length : 0,
       })
       setLoading(false)
     }

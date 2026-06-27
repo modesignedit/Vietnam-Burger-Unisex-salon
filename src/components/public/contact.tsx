@@ -1,10 +1,10 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { redis } from '@/lib/redis'
 import { MapPin, Clock, Phone } from 'lucide-react'
 import type { ContactContent } from '@/lib/types'
 
 export default async function Contact() {
-  const snap = await adminDb.ref('settings/contact').get()
-  const data = snap.val() ?? {}
+  const raw = await redis.get('settings_contact')
+  const data = raw ? JSON.parse(raw as string) : {}
   const contact = {
     address: data.address ?? '',
     phone: data.phone ?? '',
@@ -44,9 +44,7 @@ export default async function Contact() {
           <div className="bg-gold/5 border border-gold/10 p-10 text-center space-y-6">
             <h3 className="text-3xl md:text-4xl font-serif text-gold">{contact.cta_title}</h3>
             <p className="text-luxury-paper/60 leading-relaxed">{contact.cta_text}</p>
-            <a href="https://wa.me/2349118970291" target="_blank" rel="noopener noreferrer" className="btn-gold inline-block">
-              Book via WhatsApp
-            </a>
+            <a href="https://wa.me/2349118970291" target="_blank" rel="noopener noreferrer" className="btn-gold inline-block">Book via WhatsApp</a>
           </div>
         </div>
       </div>

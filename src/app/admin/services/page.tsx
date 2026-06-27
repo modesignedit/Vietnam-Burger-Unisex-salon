@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ref, get, push, update, remove } from 'firebase/database'
-import { getClientDb } from '@/lib/firebase/client'
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
@@ -14,30 +12,40 @@ export default function ServicesPage() {
   const [modal, setModal] = useState<{ open: boolean; edit?: Service }>({ open: false })
 
   async function loadServices() {
-    const snap = await get(ref(getClientDb(), 'services'))
-    const raw = snap.val() ?? {}
-    const list = Object.entries(raw)
-      .map(([id, data]) => ({ id, ...data as any } as Service))
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    const res = await fetch('/api/data?collection=services')
+    const data = await res.json()
+    const list = (data ?? []).sort((a: Service, b: Service) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     setServices(list)
     setLoading(false)
   }
 
   useEffect(() => { loadServices() }, [])
 
+  async function persist(list: Service[]) {
+    await fetch('/api/data?collection=services', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(list),
+    })
+  }
+
   async function handleSave(form: Partial<Service>) {
+    let list: Service[]
     if (modal.edit) {
-      await update(ref(getClientDb(), `services/${modal.edit.id}`), form)
+      list = services.map((s) => (s.id === modal.edit!.id ? { ...s, ...form } : s))
     } else {
-      await push(ref(getClientDb(), 'services'), { ...form, created_at: new Date().toISOString() })
+      const item = { ...form, id: crypto.randomUUID(), created_at: new Date().toISOString() } as Service
+      list = [...services, item]
     }
+    setServices(list)
+    await persist(list)
     setModal({ open: false })
-    loadServices()
   }
 
   async function handleDelete(id: string) {
-    await remove(ref(getClientDb(), `services/${id}`))
-    loadServices()
+    const list = services.filter((s) => s.id !== id)
+    setServices(list)
+    await persist(list)
   }
 
   async function handleReorder(id: string, dir: 'up' | 'down') {
@@ -45,11 +53,12 @@ export default function ServicesPage() {
     if (idx === -1) return
     const swap = dir === 'up' ? idx - 1 : idx + 1
     if (swap < 0 || swap >= services.length) return
-    const current = services[idx]
-    const target = services[swap]
-    await update(ref(getClientDb(), `services/${current.id}`), { sort_order: target.sort_order })
-    await update(ref(getClientDb(), `services/${target.id}`), { sort_order: current.sort_order })
-    loadServices()
+    const list = [...services]
+    const temp = list[idx].sort_order
+    list[idx] = { ...list[idx], sort_order: list[swap].sort_order }
+    list[swap] = { ...list[swap], sort_order: temp }
+    setServices(list)
+    await persist(list)
   }
 
   if (loading) return <AdminLayout><p className="text-luxury-paper/50">Loading...</p></AdminLayout>
@@ -73,18 +82,10 @@ export default function ServicesPage() {
               {service.description && <p className="text-luxury-paper/40 text-xs mt-1">{service.description}</p>}
             </div>
             <div className="flex items-center space-x-3">
-              <button onClick={() => handleReorder(service.id, 'up')} className="text-luxury-paper/30 hover:text-gold transition-colors">
-                <ArrowUp size={18} />
-              </button>
-              <button onClick={() => handleReorder(service.id, 'down')} className="text-luxury-paper/30 hover:text-gold transition-colors">
-                <ArrowDown size={18} />
-              </button>
-              <button onClick={() => setModal({ open: true, edit: service })} className="text-luxury-paper/30 hover:text-gold transition-colors">
-                <Pencil size={18} />
-              </button>
-              <button onClick={() => handleDelete(service.id)} className="text-luxury-paper/30 hover:text-red-400 transition-colors">
-                <Trash2 size={18} />
-              </button>
+              <button onClick={() => handleReorder(service.id, 'up')} className="text-luxury-paper/30 hover:text-gold transition-colors"><ArrowUp size={18} /></button>
+              <button onClick={() => handleReorder(service.id, 'down')} className="text-luxury-paper/30 hover:text-gold transition-colors"><ArrowDown size={18} /></button>
+              <button onClick={() => setModal({ open: true, edit: service })} className="text-luxury-paper/30 hover:text-gold transition-colors"><Pencil size={18} /></button>
+              <button onClick={() => handleDelete(service.id)} className="text-luxury-paper/30 hover:text-red-400 transition-colors"><Trash2 size={18} /></button>
             </div>
           </div>
         ))}

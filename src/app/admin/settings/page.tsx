@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ref, get, update } from 'firebase/database'
-import { getClientDb } from '@/lib/firebase/client'
 import AdminLayout from '@/components/admin/admin-layout'
 
 interface SectionField {
@@ -62,11 +60,13 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       for (const section of Object.keys(SECTIONS)) {
-        const snap = await get(ref(getClientDb(), `settings/${section}`))
-        const data = snap.val() ?? {}
-        for (const field of SECTIONS[section].fields) {
-          if (data[field.key] !== undefined) {
-            setValues((prev) => ({ ...prev, [`${section}.${field.key}`]: String(data[field.key]) }))
+        const res = await fetch(`/api/data?collection=settings_${section}`)
+        const data = await res.json()
+        if (data) {
+          for (const field of SECTIONS[section].fields) {
+            if (data[field.key] !== undefined) {
+              setValues((prev) => ({ ...prev, [`${section}.${field.key}`]: String(data[field.key]) }))
+            }
           }
         }
       }
@@ -81,7 +81,11 @@ export default function SettingsPage() {
       for (const field of config.fields) {
         data[field.key] = values[`${section}.${field.key}`] ?? ''
       }
-      await update(ref(getClientDb(), `settings/${section}`), data)
+      await fetch(`/api/data?collection=settings_${section}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
     }
     setSaving(false)
     setSaved(true)

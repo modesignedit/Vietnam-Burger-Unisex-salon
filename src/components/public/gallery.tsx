@@ -1,12 +1,10 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { redis } from '@/lib/redis'
 import type { GalleryItem } from '@/lib/types'
 
 export default async function Gallery() {
-  const snap = await adminDb.ref('gallery').get()
-  const raw = snap.val() ?? {}
-  const images = Object.entries(raw)
-    .map(([id, data]) => ({ id, ...data as any } as GalleryItem))
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const raw = await redis.get('gallery')
+  let images: GalleryItem[] = raw ? JSON.parse(raw as string) : []
+  images.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
   const displayImages = images.length
     ? images
@@ -20,9 +18,7 @@ export default async function Gallery() {
     <section id="gallery" className="py-24 px-6">
       <div className="max-w-7xl mx-auto">
         <h2 className="section-title">The Gallery</h2>
-        <p className="text-center text-luxury-paper/50 mb-16 text-sm tracking-widest uppercase">
-          Visual Excellence
-        </p>
+        <p className="text-center text-luxury-paper/50 mb-16 text-sm tracking-widest uppercase">Visual Excellence</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayImages.map((image) => (
             <div key={image.id} className="group relative overflow-hidden aspect-[4/5]">

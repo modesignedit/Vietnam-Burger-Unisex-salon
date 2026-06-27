@@ -1,9 +1,9 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { redis } from '@/lib/redis'
 import type { AboutContent } from '@/lib/types'
 
 export default async function About() {
-  const snap = await adminDb.ref('settings/about').get()
-  const data = snap.val() ?? {}
+  const raw = await redis.get('settings_about')
+  const data = raw ? JSON.parse(raw as string) : {}
   const about = { headline: data.headline ?? '', body: data.body ?? '', features: data.features ?? [] } as AboutContent
   const features = Array.isArray(about.features) ? about.features : []
 
