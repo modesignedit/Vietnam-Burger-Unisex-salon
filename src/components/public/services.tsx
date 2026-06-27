@@ -1,11 +1,6 @@
-import { redis } from '@/lib/redis'
-import type { Service } from '@/lib/types'
+import { services } from '@/lib/data'
 
-export default async function Services() {
-  const raw = await redis.get('services')
-  const services: Service[] = raw ? JSON.parse(raw as string) : []
-  services.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-
+export default function ServicesSection() {
   if (!services.length) return null
 
   return (

@@ -1,18 +1,14 @@
-import { redis } from '@/lib/redis'
+import { gallery } from '@/lib/data'
 import type { GalleryItem } from '@/lib/types'
 
-export default async function Gallery() {
-  const raw = await redis.get('gallery')
-  let images: GalleryItem[] = raw ? JSON.parse(raw as string) : []
-  images.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-
-  const displayImages = images.length
-    ? images
-    : [
+export default function GallerySection() {
+  const displayImages = gallery.length
+    ? gallery
+    : ([
         { id: '1', image_url: 'https://picsum.photos/seed/v-fade/800/1000', alt_text: 'Signature V-Burger Fade', sort_order: 1, created_at: '' },
         { id: '2', image_url: 'https://picsum.photos/seed/v-braids/800/1000', alt_text: 'Artisan Knotless Braids', sort_order: 2, created_at: '' },
         { id: '3', image_url: 'https://picsum.photos/seed/v-tint/800/1000', alt_text: 'Neon Urban Tint', sort_order: 3, created_at: '' },
-      ] as GalleryItem[]
+      ] as GalleryItem[])
 
   return (
     <section id="gallery" className="py-24 px-6">

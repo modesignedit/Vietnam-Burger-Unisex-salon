@@ -1,18 +1,14 @@
-import { redis } from '@/lib/redis'
-import type { AboutContent } from '@/lib/types'
+import { aboutContent } from '@/lib/data'
 
-export default async function About() {
-  const raw = await redis.get('settings_about')
-  const data = raw ? JSON.parse(raw as string) : {}
-  const about = { headline: data.headline ?? '', body: data.body ?? '', features: data.features ?? [] } as AboutContent
-  const features = Array.isArray(about.features) ? about.features : []
+export default function About() {
+  const features = Array.isArray(aboutContent.features) ? aboutContent.features : []
 
   return (
     <section id="about" className="py-24 px-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         <div className="space-y-8">
-          <h2 className="text-4xl md:text-7xl font-serif text-gold leading-tight">{about.headline}</h2>
-          <p className="text-luxury-paper/70 leading-relaxed">{about.body}</p>
+          <h2 className="text-4xl md:text-7xl font-serif text-gold leading-tight">{aboutContent.headline}</h2>
+          <p className="text-luxury-paper/70 leading-relaxed">{aboutContent.body}</p>
           <div className="space-y-6">
             {features.map((f, i) => (
               <div key={i} className="flex items-start space-x-4">
