@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { ref, get, push, update, remove } from 'firebase/database'
-import { database } from '@/lib/firebase/client'
+import { getClientDb, getClientStorage } from '@/lib/firebase/client'
 import { ref as storageRef, deleteObject } from 'firebase/storage'
-import { storage } from '@/lib/firebase/client'
 import { Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
@@ -17,7 +16,7 @@ export default function GalleryPage() {
   const [newAlt, setNewAlt] = useState('')
 
   async function loadGallery() {
-    const snap = await get(ref(database, 'gallery'))
+    const snap = await get(ref(getClientDb(), 'gallery'))
     const raw = snap.val() ?? {}
     const list = Object.entries(raw)
       .map(([id, data]) => ({ id, ...data as any } as GalleryItem))
@@ -30,7 +29,7 @@ export default function GalleryPage() {
 
   async function handleAdd(url: string) {
     if (!url) return
-    await push(ref(database, 'gallery'), {
+    await push(ref(getClientDb(), 'gallery'), {
       image_url: url,
       alt_text: newAlt,
       sort_order: Date.now(),
@@ -46,10 +45,10 @@ export default function GalleryPage() {
     if (item?.image_url) {
       try {
         const storagePath = item.image_url.split('/o/')[1]?.split('?')[0]
-        if (storagePath) await deleteObject(storageRef(storage, decodeURIComponent(storagePath)))
+        if (storagePath) await deleteObject(storageRef(getClientStorage(), decodeURIComponent(storagePath)))
       } catch {}
     }
-    await remove(ref(database, `gallery/${id}`))
+    await remove(ref(getClientDb(), `gallery/${id}`))
     loadGallery()
   }
 
@@ -60,8 +59,8 @@ export default function GalleryPage() {
     if (swap < 0 || swap >= items.length) return
     const current = items[idx]
     const target = items[swap]
-    await update(ref(database, `gallery/${current.id}`), { sort_order: target.sort_order })
-    await update(ref(database, `gallery/${target.id}`), { sort_order: current.sort_order })
+    await update(ref(getClientDb(), `gallery/${current.id}`), { sort_order: target.sort_order })
+    await update(ref(getClientDb(), `gallery/${target.id}`), { sort_order: current.sort_order })
     loadGallery()
   }
 

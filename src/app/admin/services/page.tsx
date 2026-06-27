@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ref, get, push, update, remove } from 'firebase/database'
-import { database } from '@/lib/firebase/client'
+import { getClientDb } from '@/lib/firebase/client'
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import AdminLayout from '@/components/admin/admin-layout'
 import ImageUpload from '@/components/admin/image-upload'
@@ -14,7 +14,7 @@ export default function ServicesPage() {
   const [modal, setModal] = useState<{ open: boolean; edit?: Service }>({ open: false })
 
   async function loadServices() {
-    const snap = await get(ref(database, 'services'))
+    const snap = await get(ref(getClientDb(), 'services'))
     const raw = snap.val() ?? {}
     const list = Object.entries(raw)
       .map(([id, data]) => ({ id, ...data as any } as Service))
@@ -27,16 +27,16 @@ export default function ServicesPage() {
 
   async function handleSave(form: Partial<Service>) {
     if (modal.edit) {
-      await update(ref(database, `services/${modal.edit.id}`), form)
+      await update(ref(getClientDb(), `services/${modal.edit.id}`), form)
     } else {
-      await push(ref(database, 'services'), { ...form, created_at: new Date().toISOString() })
+      await push(ref(getClientDb(), 'services'), { ...form, created_at: new Date().toISOString() })
     }
     setModal({ open: false })
     loadServices()
   }
 
   async function handleDelete(id: string) {
-    await remove(ref(database, `services/${id}`))
+    await remove(ref(getClientDb(), `services/${id}`))
     loadServices()
   }
 
@@ -47,8 +47,8 @@ export default function ServicesPage() {
     if (swap < 0 || swap >= services.length) return
     const current = services[idx]
     const target = services[swap]
-    await update(ref(database, `services/${current.id}`), { sort_order: target.sort_order })
-    await update(ref(database, `services/${target.id}`), { sort_order: current.sort_order })
+    await update(ref(getClientDb(), `services/${current.id}`), { sort_order: target.sort_order })
+    await update(ref(getClientDb(), `services/${target.id}`), { sort_order: current.sort_order })
     loadServices()
   }
 

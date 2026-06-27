@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { ref, get, update } from 'firebase/database'
-
-export const dynamic = 'force-dynamic'
 import { getClientDb } from '@/lib/firebase/client'
 import AdminLayout from '@/components/admin/admin-layout'
 
