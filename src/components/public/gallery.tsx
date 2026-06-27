@@ -2,8 +2,11 @@ import { adminDb } from '@/lib/firebase/admin'
 import type { GalleryItem } from '@/lib/types'
 
 export default async function Gallery() {
-  const snapshot = await adminDb.collection('gallery').orderBy('sort_order', 'asc').get()
-  const images = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as GalleryItem))
+  const snap = await adminDb.ref('gallery').get()
+  const raw = snap.val() ?? {}
+  const images = Object.entries(raw)
+    .map(([id, data]) => ({ id, ...data as any } as GalleryItem))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
   const displayImages = images.length
     ? images
@@ -20,19 +23,12 @@ export default async function Gallery() {
         <p className="text-center text-luxury-paper/50 mb-16 text-sm tracking-widest uppercase">
           Visual Excellence
         </p>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayImages.map((image) => (
             <div key={image.id} className="group relative overflow-hidden aspect-[4/5]">
-              <img
-                src={image.image_url}
-                alt={image.alt_text ?? ''}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
+              <img src={image.image_url} alt={image.alt_text ?? ''} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
               <div className="absolute inset-0 bg-luxury-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-6">
-                <span className="text-gold text-sm tracking-widest uppercase">
-                  {image.alt_text}
-                </span>
+                <span className="text-gold text-sm tracking-widest uppercase">{image.alt_text}</span>
               </div>
             </div>
           ))}

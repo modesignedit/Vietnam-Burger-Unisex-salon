@@ -2,12 +2,12 @@ import { adminDb } from '@/lib/firebase/admin'
 
 export default async function Footer() {
   const [footerSnap, socialSnap] = await Promise.all([
-    adminDb.collection('site_settings').doc('footer').get(),
-    adminDb.collection('site_settings').doc('social').get(),
+    adminDb.ref('settings/footer').get(),
+    adminDb.ref('settings/social').get(),
   ])
 
-  const footer = footerSnap.data() ?? {}
-  const social = socialSnap.data() ?? {}
+  const footer = footerSnap.val() ?? {}
+  const social = socialSnap.val() ?? {}
 
   return (
     <footer className="border-t border-gold/20 py-12 px-6">

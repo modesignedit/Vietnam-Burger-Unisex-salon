@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
-import { getDb } from '@/lib/firebase/client'
+import { ref, get } from 'firebase/database'
+import { database } from '@/lib/firebase/client'
 import { Scissors, Image, Settings } from 'lucide-react'
 import Link from 'next/link'
 import AdminLayout from '@/components/admin/admin-layout'
@@ -13,14 +13,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadStats() {
-      const db = getDb()
       const [svcSnap, galSnap] = await Promise.all([
-        getDocs(query(collection(db, 'services'), orderBy('sort_order'))),
-        getDocs(query(collection(db, 'gallery'), orderBy('sort_order'))),
+        get(ref(database, 'services')),
+        get(ref(database, 'gallery')),
       ])
       setStats({
-        services: svcSnap.size,
-        gallery: galSnap.size,
+        services: svcSnap.val() ? Object.keys(svcSnap.val()).length : 0,
+        gallery: galSnap.val() ? Object.keys(galSnap.val()).length : 0,
       })
       setLoading(false)
     }
@@ -46,11 +45,7 @@ export default function DashboardPage() {
         {cards.map((card) => {
           const Icon = card.icon
           return (
-            <Link
-              key={card.href}
-              href={card.href}
-              className={`border ${card.color}/20 p-6 hover:bg-gold/5 transition-colors group`}
-            >
+            <Link key={card.href} href={card.href} className={`border ${card.color}/20 p-6 hover:bg-gold/5 transition-colors group`}>
               <div className="flex items-center justify-between mb-4">
                 <Icon size={24} className="text-gold/60 group-hover:text-gold transition-colors" />
                 <span className="text-3xl font-serif text-gold">{card.value}</span>
@@ -64,18 +59,10 @@ export default function DashboardPage() {
       <div className="border border-gold/10 p-6">
         <h2 className="text-xl font-serif text-gold mb-4">Quick Links</h2>
         <div className="space-y-3">
-          <Link href="/" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">
-            View public site →
-          </Link>
-          <Link href="/admin/services" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">
-            Manage services →
-          </Link>
-          <Link href="/admin/gallery" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">
-            Manage gallery →
-          </Link>
-          <Link href="/admin/settings" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">
-            Edit site settings →
-          </Link>
+          <Link href="/" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">View public site →</Link>
+          <Link href="/admin/services" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">Manage services →</Link>
+          <Link href="/admin/gallery" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">Manage gallery →</Link>
+          <Link href="/admin/settings" className="block text-luxury-paper/50 hover:text-gold transition-colors text-sm">Edit site settings →</Link>
         </div>
       </div>
     </AdminLayout>

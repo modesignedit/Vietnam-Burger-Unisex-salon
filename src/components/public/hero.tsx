@@ -2,19 +2,15 @@ import { adminDb } from '@/lib/firebase/admin'
 import type { HeroContent } from '@/lib/types'
 
 export default async function Hero() {
-  const doc = await adminDb.collection('site_settings').doc('hero').get()
-  const hero = (doc.data() ?? { badge: '', headline: '', subheadline: '' }) as HeroContent
+  const snap = await adminDb.ref('settings/hero').get()
+  const hero = (snap.val() ?? { badge: '', headline: '', subheadline: '' }) as HeroContent
 
   const bgUrl = 'https://picsum.photos/seed/salon-hero/1920/1080?blur=2'
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${bgUrl})` }}
-      />
+      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${bgUrl})` }} />
       <div className="absolute inset-0 bg-gradient-to-b from-luxury-black/60 via-transparent to-luxury-black" />
-
       <div className="relative z-10 text-center max-w-4xl mx-auto px-6 space-y-8">
         <span className="inline-block text-xs tracking-[0.5em] uppercase text-gold/50 border border-gold/30 px-6 py-2">
           {hero.badge}
@@ -26,18 +22,10 @@ export default async function Hero() {
           {hero.subheadline}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="https://wa.me/2349118970291"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-gold"
-          >
+          <a href="https://wa.me/2349118970291" target="_blank" rel="noopener noreferrer" className="btn-gold">
             Book Your Transformation
           </a>
-          <a
-            href="#services"
-            className="border border-gold/30 text-gold px-8 py-3 uppercase tracking-widest text-sm hover:bg-gold/5 transition-colors"
-          >
+          <a href="#services" className="border border-gold/30 text-gold px-8 py-3 uppercase tracking-widest text-sm hover:bg-gold/5 transition-colors">
             Explore Services
           </a>
         </div>
